@@ -5,15 +5,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
-import ru.solomka.cross.GameMap;
+import ru.solomka.cross.game.GameMap;
+import ru.solomka.cross.game.enums.GameState;
 import ru.solomka.cross.utils.IntPair;
 import ru.solomka.cross.Main;
-import ru.solomka.cross.Render;
+import ru.solomka.cross.game.Render;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 
 import static java.lang.StringTemplate.STR;
 
@@ -22,7 +20,7 @@ import static java.lang.StringTemplate.STR;
 public class Player {
 
     final String name;
-    @Setter List<IntPair<Integer, Integer>> positions;
+    @Setter List<IntPair> positions;
     @Setter boolean activeRole;
 
     public void move() {
@@ -58,9 +56,22 @@ public class Player {
             return;
         }
 
-        List<IntPair<Integer, Integer>> array = new ArrayList<>(positions);
-        array.add(new IntPair<>(x, y));
+        List<IntPair> array = new ArrayList<>(positions);
+        array.add(new IntPair(x, y));
+
+        System.out.println(STR."\{this.name} - \{array}");
+
         this.setPositions(array);
+
+        for(List<IntPair> busyPos : gameMap.getTacticalPosition()) {
+            for(IntPair coordinate : busyPos) {
+                if(busyPos.stream().allMatch(s -> s.equals(coordinate))) {
+                    System.out.println(STR."Победу одержал игрок: \{gameMap.getActivePlayer().getName()}");
+                    gameMap.setState(GameState.END);
+                    return;
+                }
+            }
+        }
 
         gameMap.getOfflinePlayer().setActiveRole(true);
         this.setActiveRole(false);
@@ -71,8 +82,8 @@ public class Player {
     private boolean validMove(int x, int y, GameMap map) {
         if(x > Main.ACTIVE_MAP.getGameSetting().getMapSize()[0] || y > Main.ACTIVE_MAP.getGameSetting().getMapSize()[1]) return false;
 
-        for(Map.Entry<Player, List<IntPair<Integer, Integer>>> aMap : map.getBusyPositions().entrySet())
-            if(aMap.getValue().contains(new IntPair<>(x, y))) return false;
+        for(Map.Entry<Player, List<IntPair>> aMap : map.getBusyPositions().entrySet())
+            if(aMap.getValue().contains(new IntPair(x, y))) return false;
 
         return true;
     }
